@@ -1,6 +1,7 @@
 /* Copyright (C) Red Hat 2023 */
 package com.redhat.jws.insights;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -16,6 +17,7 @@ import org.apache.catalina.Server;
 import com.redhat.insights.InsightsReportController;
 import com.redhat.insights.core.httpclient.InsightsJdkHttpClient;
 import com.redhat.insights.http.InsightsFileWritingClient;
+import com.redhat.insights.http.InsightsHttpClient;
 import com.redhat.insights.http.InsightsMultiClient;
 import com.redhat.insights.jars.ClasspathJarInfoSubreport;
 import com.redhat.insights.logging.InsightsLogger;
@@ -29,6 +31,8 @@ public class InsightsLifecycleListener implements LifecycleListener {
     private InsightsReport insightsReport;
     private InsightsLogger logger = new TomcatLogger();
     private TomcatInsightsConfiguration configuration = new TomcatInsightsConfiguration();
+    private boolean useHttpClient = true;
+    private boolean useFileClient = true;
 
     @Override
     public void lifecycleEvent(LifecycleEvent event) {
@@ -60,14 +64,19 @@ public class InsightsLifecycleListener implements LifecycleListener {
                   new TomcatInsightsScheduler(logger, configuration, server.getUtilityExecutor());
 
             try {
-               insightsReportController = InsightsReportController.of(logger, configuration, insightsReport,
-                     () -> new InsightsMultiClient(logger,
-                           new InsightsJdkHttpClient(logger, configuration, sslContextSupplier),
-                           new InsightsFileWritingClient(logger, configuration)), insightsScheduler,
-                     new LinkedBlockingQueue<>());
-               insightsReportController.generate();
+                ArrayList<InsightsHttpClient> clients = new ArrayList<>();
+                if (useHttpClient) {
+                    clients.add(new InsightsJdkHttpClient(logger, configuration, sslContextSupplier));
+                }
+                if (useFileClient) {
+                    clients.add(new InsightsFileWritingClient(logger, configuration));
+                }
+                insightsReportController = InsightsReportController.of(logger, configuration, insightsReport,
+                        () -> new InsightsMultiClient(logger, clients.toArray(new InsightsHttpClient[0])),
+                        insightsScheduler, new LinkedBlockingQueue<>());
+                insightsReportController.generate();
             } catch (Throwable e) {
-               throw new IllegalStateException("Insights init failure", e);
+                throw new IllegalStateException("Insights init failure", e);
             }
 
         } else if (Lifecycle.STOP_EVENT.equals(event.getType())) {
@@ -221,6 +230,22 @@ public class InsightsLifecycleListener implements LifecycleListener {
 
     public void setOptingOut(boolean optingOut) {
         configuration.setOptingOut(optingOut);
+    }
+
+    public boolean getUseHttpClient() {
+        return this.useHttpClient;
+    }
+
+    public void setUseHttpClient(boolean useHttpClient) {
+        this.useHttpClient = useHttpClient;
+    }
+
+    public boolean getUseFileClient() {
+        return this.useFileClient;
+    }
+
+    public void setUseFileClient(boolean useFileClient) {
+        this.useFileClient = useFileClient;
     }
 
 }
