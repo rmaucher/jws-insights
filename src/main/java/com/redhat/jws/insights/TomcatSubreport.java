@@ -7,8 +7,9 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.redhat.insights.reports.InsightsSubreport;
 
 /**
- * JMX based subreport for Tomcat, which simply uses the json status from the
- * status manager servlet. This includes a lot of telemetry data.
+ * JMX-based subreport for Tomcat that collects telemetry data by directly
+ * querying the MBeanServer and using StatusTransformer to generate JSON
+ * output including VM state, connector state, and detailed component state.
  */
 public class TomcatSubreport implements InsightsSubreport {
 
@@ -32,6 +33,10 @@ public class TomcatSubreport implements InsightsSubreport {
     public String getVersion() {
         // Use the Tomcat version number
         return ServerInfo.getServerNumber();
+    }
+
+    public void close() {
+        serializer.unregister();
     }
 
 }

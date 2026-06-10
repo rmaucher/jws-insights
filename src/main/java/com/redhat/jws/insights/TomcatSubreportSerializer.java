@@ -82,6 +82,17 @@ public class TomcatSubreportSerializer extends JsonSerializer<InsightsSubreport>
         }
     }
 
+    public void unregister() {
+        if (mBeanServer != null) {
+            try {
+                ObjectName delegateName = new ObjectName("JMImplementation:type=MBeanServerDelegate");
+                mBeanServer.removeNotificationListener(delegateName, this);
+            } catch (Exception e) {
+                log.warn("Error unregistering MBean notification listener", e);
+            }
+        }
+    }
+
     @Override
     public void handleNotification(Notification notification, Object handback) {
 
@@ -115,6 +126,12 @@ public class TomcatSubreportSerializer extends JsonSerializer<InsightsSubreport>
 
     @Override
     public void serialize(InsightsSubreport subreport, JsonGenerator generator, SerializerProvider serializerProvider) throws IOException {
+        if (mBeanServer == null) {
+            log.error("MBean server not available, skipping Tomcat subreport data");
+            generator.writeEndObject();
+            generator.flush();
+            return;
+        }
         if (log.isDebugEnabled()) {
             log.debug("Serializing Tomcat subreport");
         }
@@ -132,6 +149,8 @@ public class TomcatSubreportSerializer extends JsonSerializer<InsightsSubreport>
             generator.writeRaw(stringWriter.toString());
         } catch (Exception e) {
             log.error("Error serializing Tomcat subreport", e);
+            generator.writeFieldName("error");
+            generator.writeString("Failed to serialize Tomcat subreport");
         }
         generator.writeEndObject();
         generator.flush();

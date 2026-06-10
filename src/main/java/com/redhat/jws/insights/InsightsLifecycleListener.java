@@ -21,14 +21,13 @@ import com.redhat.insights.http.InsightsHttpClient;
 import com.redhat.insights.http.InsightsMultiClient;
 import com.redhat.insights.jars.ClasspathJarInfoSubreport;
 import com.redhat.insights.logging.InsightsLogger;
-import com.redhat.insights.reports.InsightsReport;
 import com.redhat.insights.reports.InsightsSubreport;
 import com.redhat.insights.tls.PEMSupport;
 
 public class InsightsLifecycleListener implements LifecycleListener {
 
     private InsightsReportController insightsReportController;
-    private InsightsReport insightsReport;
+    private TomcatReport insightsReport;
     private InsightsLogger logger = new TomcatLogger();
     private TomcatInsightsConfiguration configuration = new TomcatInsightsConfiguration();
     private boolean useHttpClient = true;
@@ -82,6 +81,13 @@ public class InsightsLifecycleListener implements LifecycleListener {
         } else if (Lifecycle.STOP_EVENT.equals(event.getType())) {
             if (insightsReportController != null) {
                 insightsReportController.shutdown();
+            }
+            if (insightsReport != null) {
+                for (InsightsSubreport subreport : insightsReport.getSubreports().values()) {
+                    if (subreport instanceof TomcatSubreport) {
+                        ((TomcatSubreport) subreport).close();
+                    }
+                }
             }
         } else if (Lifecycle.PERIODIC_EVENT.equals(event.getType())) {
         }

@@ -53,7 +53,10 @@ public class JWSSubreportSerializer extends JsonSerializer<InsightsSubreport> {
             for (Connector connector : connectors) {
                 String name = String.valueOf(IntrospectionUtils.getProperty(connector, "name"));
                 generator.writeStartObject();
-                generator.writeStringField("name", name.substring(1, name.length() - 1));
+                if (name.length() >= 2 && name.startsWith("\"") && name.endsWith("\"")) {
+                    name = name.substring(1, name.length() - 1);
+                }
+                generator.writeStringField("name", name);
                 generator.writeEndObject();
             }
             generator.writeEndArray();
@@ -80,7 +83,7 @@ public class JWSSubreportSerializer extends JsonSerializer<InsightsSubreport> {
                     generator.writeStringField("name", contextName);
                     ArrayList<JarInfo> jarInfos = new ArrayList<>();
                     Loader loader = ((Context) context).getLoader();
-                    if (loader.getClassLoader() instanceof URLClassLoader) {
+                    if (loader != null && loader.getClassLoader() instanceof URLClassLoader) {
                         URLClassLoader classLoader = (URLClassLoader) loader.getClassLoader();
                         URL[] urls = classLoader.getURLs();
                         for (URL url : urls) {
@@ -91,6 +94,7 @@ public class JWSSubreportSerializer extends JsonSerializer<InsightsSubreport> {
                                 }
                             } catch (Exception e) {
                                 log.info("Error processing JAR with URL: " + url, e);
+                                // Skipping a JAR is not critical, so continue
                             }
                         }
                     }
@@ -110,7 +114,9 @@ public class JWSSubreportSerializer extends JsonSerializer<InsightsSubreport> {
                 generator.writeEndObject(); //host
             }
             generator.writeEndArray();
-            // Only do the first service ...
+            // Only process the first service; additional services are not reported
+            // as the multi services configurations in Tomcat are exceedingly rare and
+            // are not worth supporting here
             break;
         }
         generator.writeEndObject();

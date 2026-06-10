@@ -16,6 +16,9 @@ public class TomcatInsightsScheduler implements InsightsScheduler {
     private final ScheduledExecutorService utilityExecutor;
     private final InsightsConfiguration configuration;
 
+    private ScheduledFuture<?> connectFuture;
+    private ScheduledFuture<?> jarUpdateFuture;
+
     public TomcatInsightsScheduler(InsightsLogger logger,
             InsightsConfiguration configuration, ScheduledExecutorService utilityExecutor) {
         this.utilityExecutor = utilityExecutor;
@@ -24,7 +27,7 @@ public class TomcatInsightsScheduler implements InsightsScheduler {
 
     @Override
     public boolean isShutdown() {
-        return false;
+        return !active;
     }
 
     @Override
@@ -32,8 +35,9 @@ public class TomcatInsightsScheduler implements InsightsScheduler {
         if (!active) {
             throw new IllegalStateException("Not active");
         }
-        return utilityExecutor.scheduleAtFixedRate(command,
+        connectFuture = utilityExecutor.scheduleAtFixedRate(command,
                 0, configuration.getConnectPeriod().getSeconds(), TimeUnit.SECONDS);
+        return connectFuture;
     }
 
     @Override
@@ -41,15 +45,21 @@ public class TomcatInsightsScheduler implements InsightsScheduler {
         if (!active) {
             throw new IllegalStateException("Not active");
         }
-        return utilityExecutor.scheduleAtFixedRate(command,
+        jarUpdateFuture = utilityExecutor.scheduleAtFixedRate(command,
                 configuration.getUpdatePeriod().getSeconds(),
-                configuration.getUpdatePeriod().getSeconds(),
-                TimeUnit.SECONDS);
+                configuration.getUpdatePeriod().getSeconds(), TimeUnit.SECONDS);
+        return jarUpdateFuture;
     }
 
     @Override
     public void shutdown() {
         active = false;
+        if (connectFuture != null) {
+            connectFuture.cancel(true);
+        }
+        if (jarUpdateFuture != null) {
+            jarUpdateFuture.cancel(true);
+        }
     }
 
     @Override

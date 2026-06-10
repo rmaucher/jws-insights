@@ -27,8 +27,17 @@ public class TomcatReport extends AbstractTopLevelReportBase {
 
     @Override
     protected long getProcessPID() {
-        return Long.parseLong(
-                java.lang.management.ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
+        String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+        int atIndex = name.indexOf('@');
+        if (atIndex > 0) {
+            try {
+                return Long.parseLong(name.substring(0, atIndex));
+            } catch (NumberFormatException e) {
+                // Ignore
+            }
+        }
+        // Fallback: use ProcessHandle if available (Java 9+)
+        return ProcessHandle.current().pid();
     }
 
     @Override
