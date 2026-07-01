@@ -3,14 +3,9 @@ package com.redhat.jws.insights;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.apache.catalina.Globals;
 import org.apache.catalina.connector.Connector;
@@ -20,18 +15,9 @@ import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.json.JSONParser;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.insights.Filtering;
-import com.redhat.insights.config.InsightsConfiguration;
-import com.redhat.insights.jars.ClasspathJarInfoSubreport;
-import com.redhat.insights.logging.InsightsLogger;
-import com.redhat.insights.reports.InsightsReport;
-import com.redhat.insights.reports.InsightsSubreport;
-
 public class TomcatInsightsIntegrationTest {
 
-    private static final Log log = LogFactory.getLog(TomcatSubreportSerializer.class);
+    private static final Log log = LogFactory.getLog(TomcatInsightsIntegrationTest.class);
 
     @Test
     public void testReport() throws Exception {

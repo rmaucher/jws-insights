@@ -128,6 +128,7 @@ public class TomcatSubreportSerializer extends JsonSerializer<InsightsSubreport>
     public void serialize(InsightsSubreport subreport, JsonGenerator generator, SerializerProvider serializerProvider) throws IOException {
         if (mBeanServer == null) {
             log.error("MBean server not available, skipping Tomcat subreport data");
+            generator.writeStartObject();
             generator.writeEndObject();
             generator.flush();
             return;
